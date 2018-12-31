@@ -1,0 +1,10 @@
+[package]
+name = "ls_clone"
+version = "0.1.0"
+authors = ["Michael Mezzina <michaelmez39@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+
+clap = "2.32.*"
+termion = "1.5.*"
