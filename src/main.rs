@@ -1,9 +1,9 @@
 #![feature(uniform_paths)]
 
-mod listers;
+mod multicolumn;
 mod cli;
 
-use listers::Multicolumn;
+use multicolumn::Multicolumn;
 use std::env;
 use termion::style;
 

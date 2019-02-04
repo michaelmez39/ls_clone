@@ -3,6 +3,17 @@ use std::path::PathBuf;
 use termion::color;
 use std::fmt::Display;
 
+fn parse_path(path: &PathBuf) -> Option<Vec<PathBuf>>{
+	Some(fs::read_dir(path)
+			.expect("invalid path entered")
+			.map(|val| {val
+							.unwrap()
+							.path()
+							// .file_name().unwrap()
+							// .to_str().unwrap()
+							// .to_string()
+			}).collect::<Vec<PathBuf>>())
+}
 
 pub struct Multicolumn {
 	inner_directory: Vec<PathBuf>,
@@ -27,9 +38,8 @@ impl<'a> Multicolumn {
 }
 
 // This isn't used right now because it isn't needed yet
-// for displaying file information and such this could be used later
-// pub fn unicolumn(vals: Vec<fs::DirEntry>) 
-// 	{
+// this could be used later for displaying file information and such
+// pub fn unicolumn(vals: Vec<fs::DirEntry>) {
 // 	for val in vals {
 // 		match val.file_type().unwrap().is_dir() {
 // 			true => println!("{}{}{}", color::Fg(color::Blue), val.path().to_str().expect("something really fucked up"), color::Fg(color::Reset)),
@@ -62,14 +72,3 @@ impl<'a> Display for Multicolumn {
 	}
 }
 
-pub fn parse_path(path: &PathBuf) -> Option<Vec<PathBuf>>{
-	Some(fs::read_dir(path)
-			.expect("invalid path entered")
-			.map(|val| {val
-							.unwrap()
-							.path()
-							// .file_name().unwrap()
-							// .to_str().unwrap()
-							// .to_string()
-			}).collect::<Vec<PathBuf>>())
-}
