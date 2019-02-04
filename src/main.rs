@@ -1,47 +1,31 @@
 #![feature(uniform_paths)]
 
-extern crate clap;
-extern crate termion;
+mod listers;
+mod cli;
 
-use clap::{App, Arg};
-
-mod list_modifiers;
-use list_modifiers::{unicolumn, multicolumn};
-
-use std::fs;
 use std::env;
-
+use termion::style;
 
 fn main() {
-	const VERSION: &'static str = env!("CARGO_PKG_VERSION");
-	let matches = App::new("List")
-						.version(VERSION)
-						.author("Michael Mezzina")
-						.about("List files in a directory")
-						.arg(Arg::with_name("all")
-								.short("a")
-								.long("all")
-								.help("lists all files in directory, e.g. hidden files \".hidden\"")
-							)
-						.arg(Arg::with_name("PATH")
-                               .help("Sets the path to list")
-                               .required(false)
-                               .index(1))
-	;
 	//termion::terminal_size()
-
-	let args: Vec<String> = env::args().collect();
-	// println!("{}", args[0]);
-	// next step: parse argument by absolute or relative path
-
-    match args.len() {
-    	1 => {
-    		multicolumn(fs::read_dir(env::current_dir().unwrap()).unwrap().map(|x| x.unwrap()).collect());
-    	},
-    	2 => {
-    		multicolumn(fs::read_dir(&args[1]).unwrap().map(|x| x.unwrap()).collect());
-    	},
-    	_ => println!("Something went wrong, expected 0 or 1 arguments, instead got {} arguments", (args.len() - 1))
-    }
-	println!();
+	let matches = cli::build_cli().get_matches_safe().unwrap_or_else(|e| e.exit());
+	let paths = match matches.values_of("path") {
+		None => vec!(env::current_dir().expect("there is not a current directory")),
+		Some(i) => i.map(|path| std::path::PathBuf::from(path)).collect::<Vec<std::path::PathBuf>>()
+	};
+	
+	match paths.len() {
+		1 => {
+			print!("{}", style::Bold);
+			listers::multicolumn(&paths[0])
+			},
+		_ => {
+				paths.iter().for_each(|path| {
+					print!("{}", style::Reset);
+					println!("{}:", path.display());
+					print!("{}", style::Bold);
+					listers::multicolumn(path)
+				});
+			},
+	}
 }
