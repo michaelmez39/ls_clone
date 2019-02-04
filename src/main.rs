@@ -3,6 +3,7 @@
 mod listers;
 mod cli;
 
+use listers::Multicolumn;
 use std::env;
 use termion::style;
 
@@ -16,15 +17,12 @@ fn main() {
 	
 	match paths.len() {
 		1 => {
-			print!("{}", style::Bold);
-			listers::multicolumn(&paths[0])
+			println!("{}{}", style::Bold, Multicolumn::new(termion::terminal_size().unwrap(), &paths[0]));
 			},
 		_ => {
 				paths.iter().for_each(|path| {
-					print!("{}", style::Reset);
-					println!("{}:", path.display());
-					print!("{}", style::Bold);
-					listers::multicolumn(path)
+					println!("{}{}:", style::Reset, path.display());
+					println!("{}{}\n", style::Bold, Multicolumn::new(termion::terminal_size().unwrap(), &paths[0]));
 				});
 			},
 	}

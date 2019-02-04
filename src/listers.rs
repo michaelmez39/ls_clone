@@ -1,20 +1,26 @@
 use std::fs;
 use std::path::PathBuf;
 use termion::color;
+use std::fmt::Display;
 
 
-struct Multicolumn {
+pub struct Multicolumn {
+	inner_directory: Vec<PathBuf>,
 	columns: usize,
 	width: usize,
 	correct: usize
 }
 
-impl Multicolumn {
-	fn new(terminal_size: (u16, u16), max_width: usize) -> Multicolumn {
+
+impl<'a> Multicolumn {
+	pub fn new(terminal_size: (u16, u16), path: &'a PathBuf) -> Multicolumn {
+		let children_paths: Vec<PathBuf> = parse_path(path).unwrap();
+		let max = children_paths.iter().map(|string| string.file_name().unwrap().to_str().unwrap().len()).max().unwrap() + 2;
 		Multicolumn{
-			columns : terminal_size.0 as usize / max_width,
-			width : terminal_size.0 as usize/ (terminal_size.0 as usize / max_width),
-			correct : terminal_size.0 as usize- ((terminal_size.0 as usize/ (terminal_size.0 as usize / max_width)) * ( terminal_size.0 as usize / max_width))
+			inner_directory: children_paths,
+			columns : terminal_size.0 as usize / max,
+			width : terminal_size.0 as usize/ (terminal_size.0 as usize / max),
+			correct : terminal_size.0 as usize- ((terminal_size.0 as usize/ (terminal_size.0 as usize / max)) * ( terminal_size.0 as usize / max))
 		}
 	}
 
@@ -32,6 +38,30 @@ impl Multicolumn {
 // 	}
 // 	}
 
+impl<'a> Display for Multicolumn {
+	fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error>{
+		for (i, val) in self.inner_directory.iter().enumerate() {
+		 	let padding = self.width - val.file_name().unwrap().to_str().unwrap().len();
+
+			match val.metadata().expect("File error: incorrect metadata").file_type().is_dir() {
+				true => write!(f, "{}{}", color::Fg(color::Blue), val.file_name().unwrap().to_str().unwrap())?,
+				false => write!(f, "{}{}", color::Fg(color::Reset), val.file_name().unwrap().to_str().unwrap())?,
+			}
+
+			if i % self.columns == 0 {
+					for _ in 0..(padding+self.correct) {
+						write!(f, " ")?;
+					}
+				} else {
+					for _ in 0..padding {
+						write!(f, " ")?;
+					}
+			}
+		}
+	Ok(())
+	}
+}
+
 pub fn parse_path(path: &PathBuf) -> Option<Vec<PathBuf>>{
 	Some(fs::read_dir(path)
 			.expect("invalid path entered")
@@ -43,43 +73,3 @@ pub fn parse_path(path: &PathBuf) -> Option<Vec<PathBuf>>{
 							// .to_string()
 			}).collect::<Vec<PathBuf>>())
 }
-// {:-^1$}
-// fn get_str(path: DirEntry) -> &str {
-// 	path.path().file_name().unwrap().to_str().unwrap()
-// }
-pub fn multicolumn(path: &PathBuf)
-	{
-		use Multicolumn;
-		// parse the path to get a Vec<DirEntry>
-	
-		let children_paths: Vec<PathBuf> = parse_path(path).unwrap();
-		// Find the longest path name in the directory
-		let max = children_paths.iter().map(|string| string.file_name().unwrap().to_str().unwrap().len()).max().unwrap();
-
-		// Making a new Multicolumn figures out the column width, number of columns, and the correction that needs to be printed to completely fill the terminal
-		let column_data = Multicolumn::new(termion::terminal_size().unwrap(), max + 2);
-
-		for (i, val) in children_paths.iter().enumerate() {
-		 	let padding = column_data.width - val.file_name().unwrap().to_str().unwrap().len();
-
-			match val.metadata().unwrap().file_type().is_dir() {
-				true => print!("{}{}", color::Fg(color::Blue), val.file_name().unwrap().to_str().unwrap()),
-				false => print!("{}{}", color::Fg(color::Reset), val.file_name().unwrap().to_str().unwrap()),
-			}
-		 	
-			
-			// if we are at the last column, we need to print a number of spaces to keep the columns aligned
-			if i % column_data.columns == 0 {
-				for _ in 0..(padding+column_data.correct) {
-					print!(" ");
-				}
-			} else {
-			// if not we just print spaces to make the column the correct size
-				for _ in 0..padding {
-					print!(" ");
-				}
-			}
-
-		}
-		println!("{}\n", color::Fg(color::Reset));
-	}
